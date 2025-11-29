@@ -9,7 +9,6 @@
            1. 全局基础样式
            ========================================= */
         body { 
-            /* 核心修改：字体改为 Segoe UI 优先，兼顾 Mac/iOS 的系统字体 */
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
             background-color: rgb(248, 240, 237); 
             margin: 0; 
@@ -26,7 +25,7 @@
            2. 控制面板
            ========================================= */
         .controls { 
-            margin-bottom: 25px; 
+            margin-bottom: 20px; 
             display: flex; 
             gap: 10px; 
             justify-content: center; 
@@ -57,17 +56,47 @@
             white-space: nowrap; 
         }
         button:active { transform: scale(0.95); }
+        
+        /* 模式按钮激活状态 */
         .active-mode { background-color: #007AFF; color: white; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
         .btn-hard { border: 1px solid #ff3b30; color: #ff3b30; }
         .btn-hard.active-mode { background-color: #ff3b30; color: white; border: 1px solid #ff3b30; box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3); }
 
+        /* 课文按钮样式 */
+        .btn-book { border: 1px solid #795548; color: #795548; }
+        .btn-book.active-book { background-color: #795548; color: white; box-shadow: 0 4px 10px rgba(121, 85, 72, 0.3); }
+
         /* =========================================
-           3. 对话流容器
+           3. 课文显示区 (新增模块)
+           ========================================= */
+        .textbook-container {
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+            display: none; /* 默认隐藏 */
+            animation: slideDown 0.3s ease-out;
+            text-align: center;
+        }
+        
+        .textbook-img {
+            max-width: 100%;
+            border-radius: 12px;
+            border: 4px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* =========================================
+           4. 对话流容器
            ========================================= */
         .chat-container { width: 100%; max-width: 800px; padding-bottom: 80px; display: flex; flex-direction: column; gap: 20px; }
 
         /* =========================================
-           4. 场景区块
+           5. 场景区块
            ========================================= */
         .scene-block {
             display: flex;
@@ -108,7 +137,7 @@
         }
 
         /* =========================================
-           5. 消息行与头像
+           6. 消息行与头像
            ========================================= */
         .message-row { display: flex; align-items: flex-end; gap: 12px; width: 100%; }
         .message-row.left { flex-direction: row; }
@@ -125,7 +154,7 @@
         }
 
         /* =========================================
-           6. 气泡样式
+           7. 气泡样式
            ========================================= */
         .bubble { 
             padding: 15px 22px; 
@@ -181,7 +210,7 @@
         .blur-bubble:hover { filter: blur(5px); opacity: 0.8; }
 
         /* =========================================
-           🚀 7. 移动端适配
+           🚀 8. 移动端适配
            ========================================= */
         @media (max-width: 768px) {
             body { padding: 10px; }
@@ -223,12 +252,17 @@
         <button onclick="setMode('roleplay-daming', this)">🎭 演 Daming</button>
         <button onclick="setMode('roleplay-others', this)">🎭 演 Amy & Sam</button>
         <button class="btn-hard" onclick="setMode('roleplay-all', this)">🔥🔥 全员挑战</button>
+        <button class="btn-book" onclick="toggleTextbook(this)">🖼️ 显示课文</button>
+    </div>
+
+    <div id="textbook-box" class="textbook-container">
+        <img src="p44.jpg" alt="Textbook Page 44" class="textbook-img">
     </div>
 
     <div id="chat-box" class="chat-container"></div>
 
     <script>
-        // --- 1. 数据配置 ---
+        // --- 数据配置 ---
         const dialogues = [
             { scene: "Scene 1", speaker: "Amy", text: "Wow! What is it?", audio: ["Amy-1-What.mp3"] },
             { scene: "", speaker: "Daming", text: "This is a Chinese knot.", audio: ["Daming-1-Knot.mp3"] },
@@ -247,7 +281,6 @@
             { scene: "", speaker: "Sam & Amy", text: "OK. That's great!", audio: ["Amy-4-Great.mp3", "Sam-3-Great.mp3"] }
         ];
 
-        // --- 2. 头像配置 (JPG) ---
         const avatarFiles = {
             "Sam": "avatar-sam.jpg",
             "Amy": "avatar-amy.jpg",     
@@ -256,7 +289,7 @@
 
         let currentMode = 'study';
         
-        // --- 3. 极速音频仓库 ---
+        // --- 音频预加载 ---
         const audioCache = {}; 
         let activeAudios = []; 
 
@@ -272,10 +305,26 @@
                     }
                 });
             });
-            console.log("音频预加载完成！");
         }
 
-        // --- 4. 渲染逻辑 ---
+        // --- 核心功能：切换课文显示 ---
+        function toggleTextbook(btn) {
+            const box = document.getElementById('textbook-box');
+            
+            if (box.style.display === 'block') {
+                // 隐藏
+                box.style.display = 'none';
+                btn.classList.remove('active-book');
+                btn.innerHTML = '🖼️ 显示课文';
+            } else {
+                // 显示
+                box.style.display = 'block';
+                btn.classList.add('active-book');
+                btn.innerHTML = '❌ 关闭课文';
+            }
+        }
+
+        // --- 渲染逻辑 ---
         function render() {
             const container = document.getElementById('chat-box');
             container.innerHTML = '';
@@ -360,7 +409,7 @@
             });
         }
 
-        // --- 5. 极速播放器 ---
+        // --- 播放器 ---
         function playAudio(files) {
             activeAudios.forEach(a => {
                 a.pause();
@@ -385,15 +434,17 @@
             });
         }
 
-        // --- 6. 切换模式 ---
+        // --- 切换模式 ---
         function setMode(mode, btn) {
             currentMode = mode;
-            document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active-mode'));
+            // 注意：这里只移除 mode 类的按钮状态，不影响课文按钮
+            const modeBtns = document.querySelectorAll('.controls button:not(.btn-book)');
+            modeBtns.forEach(b => b.classList.remove('active-mode'));
             btn.classList.add('active-mode');
             render();
         }
 
-        // --- 7. 启动 ---
+        // --- 启动 ---
         initAudioCache();
         render();
 
