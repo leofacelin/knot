@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Magic Knot: 极速响应版</title>
+    <title>How many ropes?</title>
     <style>
         /* =========================================
            1. 全局基础样式
            ========================================= */
         body { 
-            font-family: 'Comic Sans MS', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            background-color: #f2f2f7; 
+            /* 核心修改：字体改为 Segoe UI 优先，兼顾 Mac/iOS 的系统字体 */
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: rgb(248, 240, 237); 
             margin: 0; 
             padding: 20px; 
             display: flex; 
@@ -19,7 +20,7 @@
             -webkit-text-size-adjust: 100%;
         }
         
-        h1 { color: #333; margin-bottom: 15px; font-size: 20px; text-align: center; }
+        h1 { color: #5d4037; margin-bottom: 15px; font-size: 20px; text-align: center; }
         
         /* =========================================
            2. 控制面板
@@ -33,7 +34,7 @@
             z-index: 100; 
             position: sticky; 
             top: 10px; 
-            background: rgba(242, 242, 247, 0.95); 
+            background: rgba(248, 240, 237, 0.95); 
             padding: 10px 15px;
             border-radius: 25px;
             backdrop-filter: blur(10px);
@@ -78,21 +79,21 @@
 
         .scene-left {
             width: 70px;
-            background-color: #eef1f5;
+            background-color: rgb(239, 217, 196);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             flex-shrink: 0;
-            border-right: 1px solid #f0f0f0;
-            color: #8898aa;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            color: #8d6e63;
             font-weight: bold;
             padding: 10px 5px;
             text-align: center;
             border-top-left-radius: 16px;
             border-bottom-left-radius: 16px;
         }
-        .scene-num { font-size: 24px; line-height: 1; color: #5e72e4; }
+        .scene-num { font-size: 24px; line-height: 1; color: #5d4037; }
         .scene-text { font-size: 12px; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
 
         .scene-right {
@@ -124,7 +125,7 @@
         }
 
         /* =========================================
-           6. 气泡样式 (32px 大字 + 精致动效)
+           6. 气泡样式
            ========================================= */
         .bubble { 
             padding: 15px 22px; 
@@ -139,10 +140,9 @@
             transform-origin: center;
         }
 
-        /* 悬停放大 (电脑端) */
         @media (hover: hover) {
             .bubble:hover { 
-                transform: scale(1.08); /* 8% 微放大 */
+                transform: scale(1.08); 
                 z-index: 10; 
                 box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             }
@@ -150,13 +150,24 @@
         
         .bubble.playing { 
             box-shadow: 0 0 0 4px #FFD60A; 
-            transform: scale(1.08); /* 8% 微放大 */
+            transform: scale(1.08); 
             z-index: 10;
         }
 
         /* 气泡颜色 */
-        .bg-Amy { background-color: #f8f9fa; color: #333; border: 1px solid #eee; border-top-left-radius: 4px; }
-        .bg-Sam { background-color: #f8f9fa; color: #333; border: 1px solid #eee; border-top-left-radius: 4px; }
+        .bg-Amy { 
+            background-color: rgb(251, 249, 245); 
+            color: #333; 
+            border: 1px solid #efebe9;
+            border-top-left-radius: 4px; 
+        }
+        .bg-Sam { 
+            background-color: rgb(251, 249, 245); 
+            color: #333; 
+            border: 1px solid #efebe9; 
+            border-top-left-radius: 4px; 
+        }
+        
         .bg-Daming { background-color: #95EC69; color: #000; border-top-right-radius: 4px; }
         .bg-SamAmy { background: linear-gradient(135deg, #E3F2FD, #FCE4EC); border-top-left-radius: 4px; }
 
@@ -198,13 +209,13 @@
 
             .bubble:hover { transform: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
             .bubble:active { transform: scale(0.95); }
-            .bubble.playing { transform: scale(1.05); } /* 移动端 5% 微放大 */
+            .bubble.playing { transform: scale(1.05); } 
         }
     </style>
 </head>
 <body>
 
-    <h1>🧶 Magic Chinese Knot</h1>
+    <h1>🧶 How many ropes?</h1>
 
     <div class="controls">
         <button class="active-mode" onclick="setMode('study', this)">📖 全文</button>
@@ -245,19 +256,18 @@
 
         let currentMode = 'study';
         
-        // --- 🚀 核心升级：音频缓存仓库 ---
+        // --- 3. 极速音频仓库 ---
         const audioCache = {}; 
-        let activeAudios = []; // 记录当前正在播放的 Audio 对象
+        let activeAudios = []; 
 
-        // --- 🚀 3. 预加载函数 (Preloader) ---
         function initAudioCache() {
             console.log("开始预加载音频...");
             dialogues.forEach(line => {
                 line.audio.forEach(url => {
                     if (!audioCache[url]) {
                         const audio = new Audio(url);
-                        audio.preload = 'auto'; // 强制要求浏览器下载
-                        audio.load();           // 触发加载
+                        audio.preload = 'auto'; 
+                        audio.load();           
                         audioCache[url] = audio;
                     }
                 });
@@ -350,32 +360,24 @@
             });
         }
 
-        // --- 🚀 5. 极速播放器 (修改版) ---
+        // --- 5. 极速播放器 ---
         function playAudio(files) {
-            // 1. 停止当前正在播放的所有声音
             activeAudios.forEach(a => {
                 a.pause();
-                a.currentTime = 0; // 倒带回开头
+                a.currentTime = 0; 
             });
-            activeAudios = []; // 清空活跃列表
+            activeAudios = []; 
 
-            // 2. 从缓存中取出并播放
             files.forEach(url => {
-                const audio = audioCache[url]; // 直接从内存取
+                const audio = audioCache[url]; 
                 if (audio) {
-                    audio.currentTime = 0; // 确保从头开始
-                    
-                    // 处理播放 Promise (防止某些浏览器报错)
+                    audio.currentTime = 0; 
                     const playPromise = audio.play();
                     if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.error("播放被拦截或出错:", error);
-                        });
+                        playPromise.catch(error => { console.error("播放错误:", error); });
                     }
                     activeAudios.push(audio);
                 } else {
-                    // 兜底策略：万一缓存没命中（极少情况），临时加载
-                    console.warn("缓存未命中，临时加载:", url);
                     const tempAudio = new Audio(url);
                     tempAudio.play();
                     activeAudios.push(tempAudio);
@@ -391,8 +393,7 @@
             render();
         }
 
-        // --- 🚀 7. 启动程序 ---
-        // 先预加载音频，再渲染界面
+        // --- 7. 启动 ---
         initAudioCache();
         render();
 
