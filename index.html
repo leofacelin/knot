@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Magic Knot: 精致微调版</title>
+    <title>Magic Knot: 极速响应版</title>
     <style>
         /* =========================================
            1. 全局基础样式
@@ -124,7 +124,7 @@
         }
 
         /* =========================================
-           6. 气泡样式
+           6. 气泡样式 (32px 大字 + 精致动效)
            ========================================= */
         .bubble { 
             padding: 15px 22px; 
@@ -139,11 +139,10 @@
             transform-origin: center;
         }
 
-        /* 悬停效果 - 电脑端 */
+        /* 悬停放大 (电脑端) */
         @media (hover: hover) {
             .bubble:hover { 
-                /* 核心修改：从 1.2 改为 1.08 (放大 8%) */
-                transform: scale(1.08); 
+                transform: scale(1.08); /* 8% 微放大 */
                 z-index: 10; 
                 box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             }
@@ -151,8 +150,7 @@
         
         .bubble.playing { 
             box-shadow: 0 0 0 4px #FFD60A; 
-            /* 核心修改：播放状态也改为 1.08 */
-            transform: scale(1.08); 
+            transform: scale(1.08); /* 8% 微放大 */
             z-index: 10;
         }
 
@@ -198,11 +196,9 @@
             }
             .name-tag { font-size: 12px; margin-bottom: 2px; }
 
-            /* 移动端交互调整 */
             .bubble:hover { transform: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
             .bubble:active { transform: scale(0.95); }
-            /* 核心修改：移动端播放状态微调为 1.05 (放大 5%) */
-            .bubble.playing { transform: scale(1.05); }
+            .bubble.playing { transform: scale(1.05); } /* 移动端 5% 微放大 */
         }
     </style>
 </head>
@@ -248,9 +244,28 @@
         };
 
         let currentMode = 'study';
-        let activeAudios = [];
+        
+        // --- 🚀 核心升级：音频缓存仓库 ---
+        const audioCache = {}; 
+        let activeAudios = []; // 记录当前正在播放的 Audio 对象
 
-        // --- 3. 渲染逻辑 ---
+        // --- 🚀 3. 预加载函数 (Preloader) ---
+        function initAudioCache() {
+            console.log("开始预加载音频...");
+            dialogues.forEach(line => {
+                line.audio.forEach(url => {
+                    if (!audioCache[url]) {
+                        const audio = new Audio(url);
+                        audio.preload = 'auto'; // 强制要求浏览器下载
+                        audio.load();           // 触发加载
+                        audioCache[url] = audio;
+                    }
+                });
+            });
+            console.log("音频预加载完成！");
+        }
+
+        // --- 4. 渲染逻辑 ---
         function render() {
             const container = document.getElementById('chat-box');
             container.innerHTML = '';
@@ -335,19 +350,40 @@
             });
         }
 
-        // --- 4. 播放器 ---
+        // --- 🚀 5. 极速播放器 (修改版) ---
         function playAudio(files) {
-            activeAudios.forEach(a => { a.pause(); a.currentTime = 0; });
-            activeAudios = [];
+            // 1. 停止当前正在播放的所有声音
+            activeAudios.forEach(a => {
+                a.pause();
+                a.currentTime = 0; // 倒带回开头
+            });
+            activeAudios = []; // 清空活跃列表
 
-            files.forEach(file => {
-                const audio = new Audio(file);
-                audio.play().catch(e => console.error("无法播放:", file));
-                activeAudios.push(audio);
+            // 2. 从缓存中取出并播放
+            files.forEach(url => {
+                const audio = audioCache[url]; // 直接从内存取
+                if (audio) {
+                    audio.currentTime = 0; // 确保从头开始
+                    
+                    // 处理播放 Promise (防止某些浏览器报错)
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.error("播放被拦截或出错:", error);
+                        });
+                    }
+                    activeAudios.push(audio);
+                } else {
+                    // 兜底策略：万一缓存没命中（极少情况），临时加载
+                    console.warn("缓存未命中，临时加载:", url);
+                    const tempAudio = new Audio(url);
+                    tempAudio.play();
+                    activeAudios.push(tempAudio);
+                }
             });
         }
 
-        // --- 5. 切换模式 ---
+        // --- 6. 切换模式 ---
         function setMode(mode, btn) {
             currentMode = mode;
             document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active-mode'));
@@ -355,7 +391,11 @@
             render();
         }
 
+        // --- 🚀 7. 启动程序 ---
+        // 先预加载音频，再渲染界面
+        initAudioCache();
         render();
+
     </script>
 </body>
 </html>
