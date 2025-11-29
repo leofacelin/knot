@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Magic Knot: 精致微调版</title>
+    <style>
+        /* =========================================
+           1. 全局基础样式
+           ========================================= */
+        body { 
+            font-family: 'Comic Sans MS', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f2f2f7; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        h1 { color: #333; margin-bottom: 15px; font-size: 20px; text-align: center; }
+        
+        /* =========================================
+           2. 控制面板
+           ========================================= */
+        .controls { 
+            margin-bottom: 25px; 
+            display: flex; 
+            gap: 10px; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+            z-index: 100; 
+            position: sticky; 
+            top: 10px; 
+            background: rgba(242, 242, 247, 0.95); 
+            padding: 10px 15px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            width: fit-content;
+            max-width: 95%;
+        }
+        button { 
+            font-family: inherit;
+            padding: 8px 16px; 
+            font-size: 14px; 
+            border: none; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            font-weight: bold; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            background: white; 
+            color: #555; 
+            white-space: nowrap; 
+        }
+        button:active { transform: scale(0.95); }
+        .active-mode { background-color: #007AFF; color: white; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
+        .btn-hard { border: 1px solid #ff3b30; color: #ff3b30; }
+        .btn-hard.active-mode { background-color: #ff3b30; color: white; border: 1px solid #ff3b30; box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3); }
+
+        /* =========================================
+           3. 对话流容器
+           ========================================= */
+        .chat-container { width: 100%; max-width: 800px; padding-bottom: 80px; display: flex; flex-direction: column; gap: 20px; }
+
+        /* =========================================
+           4. 场景区块
+           ========================================= */
+        .scene-block {
+            display: flex;
+            background: white;
+            border-radius: 16px;
+            overflow: visible; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .scene-left {
+            width: 70px;
+            background-color: #eef1f5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            border-right: 1px solid #f0f0f0;
+            color: #8898aa;
+            font-weight: bold;
+            padding: 10px 5px;
+            text-align: center;
+            border-top-left-radius: 16px;
+            border-bottom-left-radius: 16px;
+        }
+        .scene-num { font-size: 24px; line-height: 1; color: #5e72e4; }
+        .scene-text { font-size: 12px; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .scene-right {
+            flex: 1;
+            padding: 25px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px; 
+            background: white;
+            border-top-right-radius: 16px;
+            border-bottom-right-radius: 16px;
+        }
+
+        /* =========================================
+           5. 消息行与头像
+           ========================================= */
+        .message-row { display: flex; align-items: flex-end; gap: 12px; width: 100%; }
+        .message-row.left { flex-direction: row; }
+        .message-row.right { flex-direction: row-reverse; }
+
+        .avatar-box { flex-shrink: 0; display: flex; gap: -10px; } 
+        .avatar { 
+            width: 50px; height: 50px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+            border: 3px solid #fff; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            background-color: #ddd; 
+        }
+
+        /* =========================================
+           6. 气泡样式
+           ========================================= */
+        .bubble { 
+            padding: 15px 22px; 
+            border-radius: 25px; 
+            position: relative; 
+            cursor: pointer; 
+            max-width: 100%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-size: 32px; 
+            line-height: 1.4; 
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
+            transform-origin: center;
+        }
+
+        /* 悬停效果 - 电脑端 */
+        @media (hover: hover) {
+            .bubble:hover { 
+                /* 核心修改：从 1.2 改为 1.08 (放大 8%) */
+                transform: scale(1.08); 
+                z-index: 10; 
+                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            }
+        }
+        
+        .bubble.playing { 
+            box-shadow: 0 0 0 4px #FFD60A; 
+            /* 核心修改：播放状态也改为 1.08 */
+            transform: scale(1.08); 
+            z-index: 10;
+        }
+
+        /* 气泡颜色 */
+        .bg-Amy { background-color: #f8f9fa; color: #333; border: 1px solid #eee; border-top-left-radius: 4px; }
+        .bg-Sam { background-color: #f8f9fa; color: #333; border: 1px solid #eee; border-top-left-radius: 4px; }
+        .bg-Daming { background-color: #95EC69; color: #000; border-top-right-radius: 4px; }
+        .bg-SamAmy { background: linear-gradient(135deg, #E3F2FD, #FCE4EC); border-top-left-radius: 4px; }
+
+        /* 名字标签 */
+        .name-tag { font-size: 14px; color: #999; margin-bottom: 4px; display: block; font-weight: bold; }
+        .right .bubble .name-tag { text-align: right; color: #558b2f; }
+
+        /* 特效 */
+        .hidden-text { background: #e5e5e5; color: transparent; border-radius: 6px; padding: 0 5px; box-shadow: inset 0 0 4px rgba(0,0,0,0.1); }
+        .blur-bubble { filter: blur(8px); opacity: 0.5; user-select: none; }
+        .blur-bubble:hover { filter: blur(5px); opacity: 0.8; }
+
+        /* =========================================
+           🚀 7. 移动端适配
+           ========================================= */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            h1 { font-size: 18px; margin-bottom: 10px; }
+            
+            .controls { top: 5px; gap: 6px; padding: 8px 10px; width: 95%; box-sizing: border-box; }
+            button { font-size: 12px; padding: 6px 12px; }
+
+            .scene-left { width: 45px; padding: 10px 2px; }
+            .scene-num { font-size: 18px; }
+            .scene-text { font-size: 9px; letter-spacing: 0; }
+            
+            .scene-right { padding: 15px 10px; gap: 15px; }
+            .chat-container { gap: 15px; }
+
+            .avatar { width: 40px; height: 40px; border-width: 2px; }
+            .message-row { gap: 8px; }
+
+            .bubble { 
+                font-size: 24px; 
+                padding: 12px 16px; 
+                border-radius: 20px;
+            }
+            .name-tag { font-size: 12px; margin-bottom: 2px; }
+
+            /* 移动端交互调整 */
+            .bubble:hover { transform: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+            .bubble:active { transform: scale(0.95); }
+            /* 核心修改：移动端播放状态微调为 1.05 (放大 5%) */
+            .bubble.playing { transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🧶 Magic Chinese Knot</h1>
+
+    <div class="controls">
+        <button class="active-mode" onclick="setMode('study', this)">📖 全文</button>
+        <button onclick="setMode('keywords', this)">😶 填空</button>
+        <button onclick="setMode('roleplay-daming', this)">🎭 演 Daming</button>
+        <button onclick="setMode('roleplay-others', this)">🎭 演 Amy & Sam</button>
+        <button class="btn-hard" onclick="setMode('roleplay-all', this)">🔥🔥 全员挑战</button>
+    </div>
+
+    <div id="chat-box" class="chat-container"></div>
+
+    <script>
+        // --- 1. 数据配置 ---
+        const dialogues = [
+            { scene: "Scene 1", speaker: "Amy", text: "Wow! What is it?", audio: ["Amy-1-What.mp3"] },
+            { scene: "", speaker: "Daming", text: "This is a Chinese knot.", audio: ["Daming-1-Knot.mp3"] },
+            { scene: "", speaker: "Sam", text: "It's beautiful!", audio: ["Sam-1-Beautiful.mp3"] },
+            
+            { scene: "Scene 2", speaker: "Daming", text: "Guess! How many ropes?", audio: ["Daming-2-Guess.mp3"] },
+            
+            { scene: "Scene 3", speaker: "Sam", text: "Six?", audio: ["Sam-2-Six.mp3"] },
+            { scene: "", speaker: "Amy", text: "Twelve?", audio: ["Amy-2-Twelve.mp3"] },
+            { scene: "", speaker: "Daming", text: "Haha, no.", audio: ["Daming-3-No.mp3"] },
+            
+            { scene: "Scene 4", speaker: "Daming", text: "Look! Only one rope!", audio: ["Daming-4-Only.mp3"] },
+            { scene: "", speaker: "Amy", text: "That's amazing! How do you make it?", audio: ["Amy-3-Amazing.mp3"] },
+            
+            { scene: "Scene 5", speaker: "Daming", text: "Let me show you.", audio: ["Daming-5-Show.mp3"] },
+            { scene: "", speaker: "Sam & Amy", text: "OK. That's great!", audio: ["Amy-4-Great.mp3", "Sam-3-Great.mp3"] }
+        ];
+
+        // --- 2. 头像配置 (JPG) ---
+        const avatarFiles = {
+            "Sam": "avatar-sam.jpg",
+            "Amy": "avatar-amy.jpg",     
+            "Daming": "avatar-daming.jpg" 
+        };
+
+        let currentMode = 'study';
+        let activeAudios = [];
+
+        // --- 3. 渲染逻辑 ---
+        function render() {
+            const container = document.getElementById('chat-box');
+            container.innerHTML = '';
+
+            let currentRightContainer = null;
+
+            dialogues.forEach((line) => {
+                if (line.scene) {
+                    const block = document.createElement('div');
+                    block.className = 'scene-block';
+
+                    const sceneNum = line.scene.replace("Scene ", "");
+                    const left = document.createElement('div');
+                    left.className = 'scene-left';
+                    left.innerHTML = `<span class="scene-text">Scene</span><span class="scene-num">${sceneNum}</span>`;
+
+                    const right = document.createElement('div');
+                    right.className = 'scene-right';
+
+                    block.appendChild(left);
+                    block.appendChild(right);
+                    container.appendChild(block);
+
+                    currentRightContainer = right;
+                }
+
+                const row = document.createElement('div');
+                const isDaming = line.speaker === "Daming";
+                row.className = `message-row ${isDaming ? 'right' : 'left'}`;
+
+                let avatarHtml = '';
+                if (line.speaker === "Sam & Amy") {
+                    avatarHtml = `
+                        <img src="${avatarFiles['Sam']}" class="avatar">
+                        <img src="${avatarFiles['Amy']}" class="avatar">
+                    `;
+                } else {
+                    avatarHtml = `<img src="${avatarFiles[line.speaker]}" class="avatar">`;
+                }
+
+                let content = line.text;
+                let isRoleHidden = false;
+
+                if (currentMode === 'keywords') {
+                    const kws = ["Chinese", "knot", "ropes", "Six", "Twelve", "one", "amazing", "beautiful", "rope", "make", "Let me", "great"];
+                    kws.forEach(kw => {
+                         const reg = new RegExp(`\\b${kw}\\b`, 'gi');
+                         content = content.replace(reg, `<span class="hidden-text">????</span>`);
+                    });
+                } else {
+                    if (currentMode === 'roleplay-daming' && line.speaker === 'Daming') isRoleHidden = true;
+                    else if (currentMode === 'roleplay-others' && (['Amy','Sam','Sam & Amy'].includes(line.speaker))) isRoleHidden = true;
+                    else if (currentMode === 'roleplay-all') isRoleHidden = true;
+                }
+
+                const bgClass = `bg-${line.speaker.replace(/ & /g, '').replace(/\s/g, '')}`;
+                
+                row.innerHTML = `
+                    <div class="avatar-box">${avatarHtml}</div>
+                    <div class="bubble ${bgClass} ${isRoleHidden ? 'blur-bubble' : ''}">
+                        <span class="name-tag">${line.speaker}</span>
+                        <span class="text-content">${content}</span>
+                    </div>
+                `;
+
+                const bubbleEl = row.querySelector('.bubble');
+                bubbleEl.onclick = function() {
+                    document.querySelectorAll('.bubble').forEach(b => b.classList.remove('playing'));
+                    this.classList.add('playing');
+                    
+                    if (isRoleHidden) this.classList.remove('blur-bubble');
+                    if (currentMode === 'keywords') this.querySelector('.text-content').innerHTML = line.text;
+
+                    playAudio(line.audio);
+                };
+
+                if (currentRightContainer) {
+                    currentRightContainer.appendChild(row);
+                } else {
+                    container.appendChild(row);
+                }
+            });
+        }
+
+        // --- 4. 播放器 ---
+        function playAudio(files) {
+            activeAudios.forEach(a => { a.pause(); a.currentTime = 0; });
+            activeAudios = [];
+
+            files.forEach(file => {
+                const audio = new Audio(file);
+                audio.play().catch(e => console.error("无法播放:", file));
+                activeAudios.push(audio);
+            });
+        }
+
+        // --- 5. 切换模式 ---
+        function setMode(mode, btn) {
+            currentMode = mode;
+            document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active-mode'));
+            btn.classList.add('active-mode');
+            render();
+        }
+
+        render();
+    </script>
+</body>
+</html>
